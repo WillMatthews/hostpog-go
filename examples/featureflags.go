@@ -51,7 +51,8 @@ func TestIsFeatureEnabled() {
 		DistinctId: "hello",
 	})
 	fmt.Println("variantResult:", variantResult)
-	if variantErr != nil || variantResult != "variant-value" {
+	if variantErr != nil ||
+		(*variantResult) != posthog.FlagValueString("variant-value") {
 		fmt.Println("error:", variantErr)
 	}
 
@@ -61,7 +62,7 @@ func TestIsFeatureEnabled() {
 		DistinctId: "hello",
 	})
 	fmt.Println("variantResult:", variantResult)
-	if variantErr != nil || variantResult == true {
+	if variantErr != nil || (*variantResult) == posthog.FlagValueSimple(true) {
 		fmt.Println("error:", variantErr)
 	}
 }

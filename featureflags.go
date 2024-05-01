@@ -78,15 +78,22 @@ type FlagProperty struct {
 
 type FlagValue interface {
 	_hydra()
+	truthy() bool
 }
 
-type SimpleFlagValue bool
-type MultivariateFlagValue string
+type FlagValueSimple bool
 type FlagValueString string
 
-func (SimpleFlagValue) _hydra()       {}
-func (MultivariateFlagValue) _hydra() {}
-func (FlagValueString) _hydra()       {}
+func (FlagValueSimple) _hydra() {}
+func (FlagValueString) _hydra() {}
+
+func (s FlagValueSimple) truthy() bool {
+	return bool(s)
+}
+
+func (f FlagValueString) truthy() bool {
+	return len(f) > 0 // maybe?
+}
 
 // PropValue may be a PropertyGroup or a FlagProperty (union type)
 // ARRRGH THIS IS RECURSIVELY DEFINED??
@@ -123,8 +130,10 @@ type DecideRequestData struct {
 }
 
 type DecideResponse struct {
-	FeatureFlags map[string]interface{} `json:"featureFlags"`
+	FeatureFlags flagz `json:"featureFlags"`
 }
+
+type flagz map[string]interface{}
 
 type InconclusiveMatchError struct {
 	msg string
@@ -340,7 +349,7 @@ func (poller *FeatureFlagsPoller) computeFlagLocally(
 	}
 
 	if !flag.Active {
-		return SimpleFlagValue(false), nil
+		return FlagValueSimple(false), nil
 	}
 
 	if flag.Filters.AggregationGroupTypeIndex != nil {
@@ -383,7 +392,7 @@ func getMatchingVariant(flag FeatureFlag, distinctId string) (FlagValue, error) 
 			return FlagValueString(variant.Key), nil
 		}
 	}
-	return SimpleFlagValue(true), nil
+	return FlagValueSimple(true), nil
 }
 
 func getVariantLookupTable(flag FeatureFlag) []FlagVariantMeta {
@@ -462,11 +471,11 @@ func matchFeatureFlagProperties(
 	}
 
 	if isInconclusive {
-		return SimpleFlagValue(false), &InconclusiveMatchError{
+		return FlagValueSimple(false), &InconclusiveMatchError{
 			"Can't determine if feature flag is enabled or not with given properties",
 		}
 	}
-	return SimpleFlagValue(false), nil
+	return FlagValueSimple(false), nil
 }
 
 // This function is OK
@@ -537,7 +546,6 @@ func matchPropertyGroup(
 
 	for _, value := range propertyGroup.Values {
 		switch prop := value.(type) {
-		//case map[string]any:
 		case PropertyGroup:
 			if len(prop.Values) > 0 {
 				matches, err := matchPropertyGroup(prop, properties, cohorts)
@@ -806,14 +814,14 @@ func (poller *FeatureFlagsPoller) isSimpleFlagEnabled(
 	key string,
 	distinctId string,
 	rolloutPercentage uint8,
-) (SimpleFlagValue, error) {
+) (FlagValueSimple, error) {
 	isEnabled, err := checkIfSimpleFlagEnabled(key, distinctId, rolloutPercentage)
 	if err != nil {
 		errMessage := "Error converting string to int"
 		poller.Errorf(errMessage)
 		return false, errors.New(errMessage)
 	}
-	return SimpleFlagValue(isEnabled), nil
+	return FlagValueSimple(isEnabled), nil
 }
 
 // extracted as a regular func for testing purposes
@@ -900,9 +908,7 @@ func (poller *FeatureFlagsPoller) request(
 		poller.Errorf("creating request - %s", err)
 	}
 
-	version := getVersion()
-
-	req.Header.Add("User-Agent", "posthog-go (version: "+version+")")
+	req.Header.Add("User-Agent", "posthog-go (version: "+getVersion()+")")
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Content-Length", fmt.Sprintf("%d", len(requestData)))
 
@@ -931,7 +937,7 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariants(
 	groups Groups,
 	personProperties Properties,
 	groupProperties map[string]Properties,
-) (map[string]interface{}, error) {
+) (flagz, error) {
 	errorMessage := "Failed when getting flag variants"
 	requestDataBytes, err := json.Marshal(DecideRequestData{
 		ApiKey:           poller.projectApiKey,
@@ -940,12 +946,13 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariants(
 		PersonProperties: personProperties,
 		GroupProperties:  groupProperties,
 	})
-	headers := [][2]string{{"Authorization", "Bearer " + poller.personalApiKey + ""}}
 	if err != nil {
 		errorMessage = "unable to marshal decide endpoint request data"
 		poller.Errorf(errorMessage)
 		return nil, errors.New(errorMessage)
 	}
+
+	headers := [][2]string{{"Authorization", "Bearer " + poller.personalApiKey + ""}}
 	res, cancel, err := poller.decide(requestDataBytes, headers)
 	defer cancel()
 	if err != nil || res.StatusCode != http.StatusOK {
@@ -956,12 +963,14 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariants(
 		poller.Errorf(errorMessage)
 		return nil, errors.New(errorMessage)
 	}
+
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		errorMessage = "Error reading response from /decide/"
 		poller.Errorf(errorMessage)
 		return nil, errors.New(errorMessage)
 	}
+
 	defer res.Body.Close()
 	decideResponse := DecideResponse{}
 	err = json.Unmarshal([]byte(resBody), &decideResponse)
@@ -974,7 +983,6 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariants(
 	return decideResponse.FeatureFlags, nil
 }
 
-// AAARGH!
 func (poller *FeatureFlagsPoller) getFeatureFlagVariant(
 	featureFlag FeatureFlag,
 	key string,
@@ -983,10 +991,8 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariant(
 	personProperties Properties,
 	groupProperties map[string]Properties,
 ) (FlagValue, error) {
-	var result FlagValue = nil
 
 	if featureFlag.IsSimpleFlag {
-
 		// json.Unmarshal will convert JSON `null` to a nullish value for each type
 		// which is 0 for uint. However, our feature flags should have rolloutPercentage == 100
 		// if it is set to `null`. Having rollout percentage be a pointer and deferencing it
@@ -996,14 +1002,14 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariant(
 		if featureFlag.RolloutPercentage != nil {
 			rolloutPercentage = *featureFlag.RolloutPercentage
 		}
-		var err error
-		result, err = poller.isSimpleFlagEnabled(key, distinctId, rolloutPercentage)
+		result, err := poller.isSimpleFlagEnabled(key, distinctId, rolloutPercentage)
 		if err != nil {
 			return nil, err
 		}
-	} else { // if not simple it should be multivariate
-		featureFlagVariants, variantErr := poller.getFeatureFlagVariants(distinctId, groups, personProperties, groupProperties)
+		return result, nil
 
+	} else { // if not simple it should be multivariate! ... right?
+		featureFlagVariants, variantErr := poller.getFeatureFlagVariants(distinctId, groups, personProperties, groupProperties)
 		if variantErr != nil {
 			return nil, variantErr
 		}
@@ -1011,10 +1017,10 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariant(
 		for flagKey, flagValue := range featureFlagVariants {
 			flagValueString := fmt.Sprintf("%v", flagValue)
 			if key == flagKey && flagValueString != "false" {
-				result = FlagValueString(flagValueString)
-				break
+				result := FlagValueString(flagValueString)
+				return result, nil
 			}
 		}
 	}
-	return result, nil
+	return nil, errors.New("Flag not found") // wam addition
 }

@@ -252,15 +252,9 @@ func (c *client) IsFeatureEnabled(flagConfig FeatureFlagPayload) (bool, error) {
 		return false, err
 	}
 
+	// IF flag is a simple flag, return hte boolean value
 
-	switch *flagval.(type):
-	case *SimpleFlagValue:
-		return flagVal.(*SimpleFlagValue).Value, nil
-	case *MultivariateFlagValue:
-		return flagVal.(*MultivariateFlagValue).Variant == flagConfig.Variant, nil
-	default:
-		return false, errors.New("unknown flag value type")
-	}
+	// If flag is a multivariate flag, return its string value
 }
 
 func (c *client) ReloadFeatureFlags() error {
