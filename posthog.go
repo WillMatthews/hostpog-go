@@ -38,11 +38,11 @@ type Client interface {
 	Enqueue(Message) error
 	//
 	// Method returns if a feature flag is on for a given user based on their distinct ID
-	IsFeatureEnabled(FeatureFlagPayload) (interface{}, error)
+	IsFeatureEnabled(FeatureFlagPayload) (bool, error)
 	//
 	// Method returns variant value if multivariantflag or otherwise a boolean indicating
 	// if the given flag is on or off for the user
-	GetFeatureFlag(FeatureFlagPayload) (interface{}, error)
+	GetFeatureFlag(FeatureFlagPayload) (*FlagValue, error)
 	//
 	// Method forces a reload of feature flags
 	ReloadFeatureFlags() error
@@ -84,10 +84,9 @@ type client struct {
 // Instantiate a new client that uses the write key passed as first argument to
 // send messages to the backend.
 // The client is created with the default configuration.
-func New(apiKey string) Client {
+func New(apiKey string) (Client, error) {
 	// Here we can ignore the error because the default config is always valid.
-	c, _ := NewWithConfig(apiKey, Config{})
-	return c
+	return NewWithConfig(apiKey, Config{})
 }
 
 // Instantiate a new client that uses the write key and configuration passed as
@@ -97,7 +96,7 @@ func New(apiKey string) Client {
 // When the function returns an error the returned client will always be nil.
 func NewWithConfig(apiKey string, config Config) (cli Client, err error) {
 	if err = config.validate(); err != nil {
-		return
+		return nil, err
 	}
 
 	c := &client{
@@ -125,8 +124,7 @@ func NewWithConfig(apiKey string, config Config) (cli Client, err error) {
 
 	go c.loop()
 
-	cli = c
-	return
+	return c, nil
 }
 
 func makeHttpClient(transport http.RoundTripper) http.Client {
@@ -238,7 +236,7 @@ func (c *client) Enqueue(msg Message) (err error) {
 	return
 }
 
-func (c *client) IsFeatureEnabled(flagConfig FeatureFlagPayload) (interface{}, error) {
+func (c *client) IsFeatureEnabled(flagConfig FeatureFlagPayload) (bool, error) {
 	if err := flagConfig.validate(); err != nil {
 		return false, err
 	}
@@ -249,18 +247,20 @@ func (c *client) IsFeatureEnabled(flagConfig FeatureFlagPayload) (interface{}, e
 		return false, errors.New(errorMessage)
 	}
 
-	result, err := c.GetFeatureFlag(flagConfig)
+	flagVal, err := c.GetFeatureFlag(flagConfig)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
-	if result == "false" {
-		result = false
-	} else if result == "true" {
-		result = true
-	}
 
-	return result, nil
+	switch *flagval.(type):
+	case *SimpleFlagValue:
+		return flagVal.(*SimpleFlagValue).Value, nil
+	case *MultivariateFlagValue:
+		return flagVal.(*MultivariateFlagValue).Variant == flagConfig.Variant, nil
+	default:
+		return false, errors.New("unknown flag value type")
+	}
 }
 
 func (c *client) ReloadFeatureFlags() error {
@@ -273,18 +273,19 @@ func (c *client) ReloadFeatureFlags() error {
 	return nil
 }
 
-func (c *client) GetFeatureFlag(flagConfig FeatureFlagPayload) (interface{}, error) {
+func (c *client) GetFeatureFlag(flagConfig FeatureFlagPayload) (*FlagValue, error) {
 	if err := flagConfig.validate(); err != nil {
-		return false, err
+		return nil, err
 	}
 
 	if c.featureFlagsPoller == nil {
 		errorMessage := "specifying a PersonalApiKey is required for using feature flags"
 		c.Errorf(errorMessage)
-		return "false", errors.New(errorMessage)
+		return nil, errors.New(errorMessage)
 	}
 	flagValue, err := c.featureFlagsPoller.GetFeatureFlag(flagConfig)
-	if *flagConfig.SendFeatureFlagEvents && !c.distinctIdsFeatureFlagsReported.contains(flagConfig.DistinctId, flagConfig.Key) {
+	if *flagConfig.SendFeatureFlagEvents &&
+		!c.distinctIdsFeatureFlagsReported.contains(flagConfig.DistinctId, flagConfig.Key) {
 		c.Enqueue(Capture{
 			DistinctId: flagConfig.DistinctId,
 			Event:      "$feature_flag_called",
@@ -296,7 +297,7 @@ func (c *client) GetFeatureFlag(flagConfig FeatureFlagPayload) (interface{}, err
 		})
 		c.distinctIdsFeatureFlagsReported.add(flagConfig.DistinctId, flagConfig.Key)
 	}
-	return flagValue, err
+	return &flagValue, err
 }
 
 func (c *client) GetFeatureFlags() ([]FeatureFlag, error) {
@@ -383,13 +384,20 @@ func (c *client) send(msgs []message) {
 		select {
 		case <-time.After(c.RetryAfter(i)):
 		case <-c.quit:
-			c.Errorf("%d messages dropped because they failed to be sent and the client was closed", len(msgs))
+			c.Errorf(
+				"%d messages dropped because they failed to be sent and the client was closed",
+				len(msgs),
+			)
 			c.notifyFailure(msgs, err)
 			return
 		}
 	}
 
-	c.Errorf("%d messages dropped because they failed to be sent after %d attempts", len(msgs), attempts)
+	c.Errorf(
+		"%d messages dropped because they failed to be sent after %d attempts",
+		len(msgs),
+		attempts,
+	)
 	c.notifyFailure(msgs, err)
 }
 
@@ -545,14 +553,24 @@ func (c *client) notifyFailure(msgs []message, err error) {
 	}
 }
 
-func (c *client) getFeatureVariants(distinctId string, groups Groups, personProperties Properties, groupProperties map[string]Properties) (map[string]interface{}, error) {
+func (c *client) getFeatureVariants(
+	distinctId string,
+	groups Groups,
+	personProperties Properties,
+	groupProperties map[string]Properties,
+) (map[string]interface{}, error) {
 	if c.featureFlagsPoller == nil {
 		errorMessage := "specifying a PersonalApiKey is required for using feature flags"
 		c.Errorf(errorMessage)
 		return nil, errors.New(errorMessage)
 	}
 
-	featureVariants, err := c.featureFlagsPoller.getFeatureFlagVariants(distinctId, groups, personProperties, groupProperties)
+	featureVariants, err := c.featureFlagsPoller.getFeatureFlagVariants(
+		distinctId,
+		groups,
+		personProperties,
+		groupProperties,
+	)
 	if err != nil {
 		return nil, err
 	}

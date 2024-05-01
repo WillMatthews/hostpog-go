@@ -44,11 +44,13 @@ func TestMatchPropertyInvalidOperator(t *testing.T) {
 	isMatch, err := matchProperty(property, properties)
 
 	if isMatch == true {
-		t.Error("Should not match")
+		t.Error("Should not match") // why is this the expected behavior?
+		// is it because the operator is unknown? or because the types don't match?
 	}
 
 	if _, ok := err.(*InconclusiveMatchError); !ok {
 		t.Error("Error type is not a match")
+		// what is the expected error type then?
 	}
 
 }
@@ -320,14 +322,26 @@ func TestFlagGroup(t *testing.T) {
 				t.Errorf("Expected apiKey to be Csyjlnlun3OzyNJAafdlv, got %s", reqBody.ApiKey)
 			}
 
-			personPropertiesEquality := reflect.DeepEqual(reqBody.PersonProperties, Properties{"region": "Canada"})
+			personPropertiesEquality := reflect.DeepEqual(
+				reqBody.PersonProperties,
+				Properties{"region": "Canada"},
+			)
 			if !personPropertiesEquality {
-				t.Errorf("Expected personProperties to be map[region:Canada], got %s", reqBody.PersonProperties)
+				t.Errorf(
+					"Expected personProperties to be map[region:Canada], got %s",
+					reqBody.PersonProperties,
+				)
 			}
 
-			groupPropertiesEquality := reflect.DeepEqual(reqBody.GroupProperties, map[string]Properties{"company": Properties{"name": "Project Name 1"}})
+			groupPropertiesEquality := reflect.DeepEqual(
+				reqBody.GroupProperties,
+				map[string]Properties{"company": Properties{"name": "Project Name 1"}},
+			)
 			if !groupPropertiesEquality {
-				t.Errorf("Expected groupProperties to be map[company:map[name:Project Name 1]], got %s", reqBody.GroupProperties)
+				t.Errorf(
+					"Expected groupProperties to be map[company:map[name:Project Name 1]], got %s",
+					reqBody.GroupProperties,
+				)
 			}
 			w.Write([]byte(fixture("test-decide-v2.json")))
 		} else if strings.HasPrefix(r.URL.Path, "/api/feature_flag/local_evaluation") {
@@ -348,11 +362,13 @@ func TestFlagGroup(t *testing.T) {
 
 	isMatch, _ := client.IsFeatureEnabled(
 		FeatureFlagPayload{
-			Key:                 "unknown-flag",
-			DistinctId:          "-",
-			Groups:              Groups{"company": "abc"},
-			PersonProperties:    NewProperties().Set("region", "Canada"),
-			GroupProperties:     map[string]Properties{"company": NewProperties().Set("name", "Project Name 1")},
+			Key:              "unknown-flag",
+			DistinctId:       "-",
+			Groups:           Groups{"company": "abc"},
+			PersonProperties: NewProperties().Set("region", "Canada"),
+			GroupProperties: map[string]Properties{
+				"company": NewProperties().Set("name", "Project Name 1"),
+			},
 			OnlyEvaluateLocally: false,
 		},
 	)
@@ -376,9 +392,11 @@ func TestFlagGroupProperty(t *testing.T) {
 
 	isMatch, _ := client.IsFeatureEnabled(
 		FeatureFlagPayload{
-			Key:             "group-flag",
-			DistinctId:      "some-distinct-id",
-			GroupProperties: map[string]Properties{"company": NewProperties().Set("name", "Project Name 1")},
+			Key:        "group-flag",
+			DistinctId: "some-distinct-id",
+			GroupProperties: map[string]Properties{
+				"company": NewProperties().Set("name", "Project Name 1"),
+			},
 		},
 	)
 
@@ -388,9 +406,11 @@ func TestFlagGroupProperty(t *testing.T) {
 
 	isMatch, _ = client.IsFeatureEnabled(
 		FeatureFlagPayload{
-			Key:             "group-flag",
-			DistinctId:      "some-distinct-id",
-			GroupProperties: map[string]Properties{"company": NewProperties().Set("name", "Project Name 2")},
+			Key:        "group-flag",
+			DistinctId: "some-distinct-id",
+			GroupProperties: map[string]Properties{
+				"company": NewProperties().Set("name", "Project Name 2"),
+			},
 		},
 	)
 
@@ -400,10 +420,12 @@ func TestFlagGroupProperty(t *testing.T) {
 
 	isMatch, _ = client.IsFeatureEnabled(
 		FeatureFlagPayload{
-			Key:             "group-flag",
-			DistinctId:      "some-distinct-id",
-			Groups:          Groups{"company": "amazon_without_rollout"},
-			GroupProperties: map[string]Properties{"company": NewProperties().Set("name", "Project Name 1")},
+			Key:        "group-flag",
+			DistinctId: "some-distinct-id",
+			Groups:     Groups{"company": "amazon_without_rollout"},
+			GroupProperties: map[string]Properties{
+				"company": NewProperties().Set("name", "Project Name 1"),
+			},
 		},
 	)
 
@@ -479,7 +501,7 @@ func TestFallbackToDecide(t *testing.T) {
 	)
 
 	if isMatch != true {
-		t.Error("Should match")
+		t.Error("Should match, but instead got", isMatch, "of type", reflect.TypeOf(isMatch))
 	}
 }
 
@@ -696,7 +718,8 @@ func TestGetAllFlags(t *testing.T) {
 		DistinctId: "distinct-id",
 	})
 
-	if featureVariants["beta-feature"] != "decide-fallback-value" || featureVariants["beta-feature2"] != "variant-2" {
+	if featureVariants["beta-feature"] != "decide-fallback-value" ||
+		featureVariants["beta-feature2"] != "variant-2" {
 		t.Error("Should match decide values")
 	}
 }
@@ -722,7 +745,8 @@ func TestGetAllFlagsEmptyLocal(t *testing.T) {
 		DistinctId: "distinct-id",
 	})
 
-	if featureVariants["beta-feature"] != "decide-fallback-value" || featureVariants["beta-feature2"] != "variant-2" {
+	if featureVariants["beta-feature"] != "decide-fallback-value" ||
+		featureVariants["beta-feature2"] != "variant-2" {
 		t.Error("Should match decide values")
 	}
 }
@@ -775,7 +799,8 @@ func TestGetAllFlagsOnlyLocalEvaluationSet(t *testing.T) {
 		OnlyEvaluateLocally: true,
 	})
 
-	if featureVariants["beta-feature"] != true || featureVariants["disabled-feature"] != false || featureVariants["beta-feature2"] != nil {
+	if featureVariants["beta-feature"] != true || featureVariants["disabled-feature"] != false ||
+		featureVariants["beta-feature2"] != nil {
 		t.Error("Should match")
 	}
 }
@@ -3152,7 +3177,9 @@ func TestMultivariateFlagConsistency(t *testing.T) {
 
 func TestComplexCohortsLocally(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(fixture("feature_flag/test-complex-cohorts-locally.json"))) // Don't return anything for local eval
+		w.Write(
+			[]byte(fixture("feature_flag/test-complex-cohorts-locally.json")),
+		) // Don't return anything for local eval
 	}))
 	defer server.Close()
 
@@ -3192,7 +3219,9 @@ func TestComplexCohortsLocally(t *testing.T) {
 
 func TestComplexCohortsWithNegationLocally(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(fixture("feature_flag/test-complex-cohorts-negation-locally.json"))) // Don't return anything for local eval
+		w.Write(
+			[]byte(fixture("feature_flag/test-complex-cohorts-negation-locally.json")),
+		) // Don't return anything for local eval
 	}))
 	defer server.Close()
 
@@ -3321,7 +3350,9 @@ func TestFlagWithTimeoutExceeded(t *testing.T) {
 			DistinctId:       "-",
 			Groups:           Groups{"company": "posthog"},
 			PersonProperties: NewProperties().Set("region", "USA"),
-			GroupProperties:  map[string]Properties{"company": NewProperties().Set("name", "Project Name 1")},
+			GroupProperties: map[string]Properties{
+				"company": NewProperties().Set("name", "Project Name 1"),
+			},
 		},
 	)
 
@@ -3330,7 +3361,8 @@ func TestFlagWithTimeoutExceeded(t *testing.T) {
 	}
 	fmt.Println(variants)
 
-	if variants == nil || len(variants) != 2 || variants["simple-flag"] != true || variants["group-flag"] != true {
+	if variants == nil || len(variants) != 2 || variants["simple-flag"] != true ||
+		variants["group-flag"] != true {
 		t.Error("should return locally evaluated flag")
 	}
 }

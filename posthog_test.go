@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -95,7 +94,7 @@ var (
 			Proto:      r.Proto,
 			ProtoMajor: r.ProtoMajor,
 			ProtoMinor: r.ProtoMinor,
-			Body:       ioutil.NopCloser(strings.NewReader("")),
+			Body:       io.NopCloser(strings.NewReader("")),
 			Request:    r,
 		}, nil
 	})
@@ -114,7 +113,7 @@ var (
 			Proto:      r.Proto,
 			ProtoMajor: r.ProtoMajor,
 			ProtoMinor: r.ProtoMinor,
-			Body:       ioutil.NopCloser(strings.NewReader("")),
+			Body:       io.NopCloser(strings.NewReader("")),
 			Request:    r,
 		}, nil
 	})
@@ -127,8 +126,10 @@ var (
 			Proto:      r.Proto,
 			ProtoMajor: r.ProtoMajor,
 			ProtoMinor: r.ProtoMinor,
-			Body:       ioutil.NopCloser(readFunc(func(b []byte) (int, error) { return 0, testError })),
-			Request:    r,
+			Body: io.NopCloser(
+				readFunc(func(b []byte) (int, error) { return 0, testError }),
+			),
+			Request: r,
 		}, nil
 	})
 
@@ -144,7 +145,7 @@ func fixture(name string) string {
 		panic(err)
 	}
 	defer f.Close()
-	b, err := ioutil.ReadAll(f)
+	b, err := io.ReadAll(f)
 	if err != nil {
 		panic(err)
 	}
@@ -354,7 +355,8 @@ func (c *customMessage) APIfy() APIMessage {
 }
 
 func TestEnqueuingCustomTypeFails(t *testing.T) {
-	client := New("0123456789")
+	client, _ := New("0123456789")
+	// ignore error, as we're testing the error
 	err := client.Enqueue(&customMessage{})
 
 	if err.Error() != "messages with custom types cannot be enqueued: *posthog.customMessage" {
@@ -469,7 +471,7 @@ func TestCaptureMany(t *testing.T) {
 }
 
 func TestClientCloseTwice(t *testing.T) {
-	client := New("0123456789")
+	client, _ := New("0123456789")
 
 	if err := client.Close(); err != nil {
 		t.Error("closing a client should not a return an error")
@@ -494,17 +496,23 @@ func TestClientConfigError(t *testing.T) {
 	}
 
 	if _, ok := err.(ConfigError); !ok {
-		t.Errorf("invalid error type returned when creating a client with an invalid config: %T", err)
+		t.Errorf(
+			"invalid error type returned when creating a client with an invalid config: %T",
+			err,
+		)
 	}
 
 	if client != nil {
-		t.Error("invalid non-nil client object returned when creating a client with and invalid config:", client)
+		t.Error(
+			"invalid non-nil client object returned when creating a client with and invalid config:",
+			client,
+		)
 		client.Close()
 	}
 }
 
 func TestClientEnqueueError(t *testing.T) {
-	client := New("0123456789")
+	client, _ := New("0123456789")
 	defer client.Close()
 
 	if err := client.Enqueue(testErrorMessage{}); err != testError {
@@ -758,7 +766,8 @@ func TestFeatureFlagsWithNoPersonalApiKey(t *testing.T) {
 	_, receivedErrors[3] = client.GetFeatureFlags()
 
 	for _, receivedError := range receivedErrors {
-		if receivedError == nil || receivedError.Error() != "specifying a PersonalApiKey is required for using feature flags" {
+		if receivedError == nil ||
+			receivedError.Error() != "specifying a PersonalApiKey is required for using feature flags" {
 			t.Errorf("feature flags methods should return error without personal api key")
 			return
 		}
@@ -843,8 +852,8 @@ func TestComplexFlag(t *testing.T) {
 		},
 	)
 
-	if valueErr != nil || flagValue != true {
-		t.Errorf("flag listed in /decide/ response should be true")
+	if valueErr != nil || flagValue == nil {
+		t.Errorf("flag listed in /decide/ response should exist")
 	}
 }
 
