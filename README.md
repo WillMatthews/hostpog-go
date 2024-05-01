@@ -1,4 +1,15 @@
-# PostHog Go
+# HostPog Go
+
+I had a small episode due to some of the limitations of Posthog-go.
+I thought I'd channel my frustration into a _meaningful contribution to open source_ instead.
+
+This repo aims to fix some of the problems I noticed with the original posthog repo:
+- poor code quality
+- love of interface{} (who needs typs anyway yee haw)
+- lack of ability to use payloads
+
+This is a work in progress, but I'll try to get somewhere, and maybe even open up a PR into posthog.
+
 
 Please see the main [PostHog docs](https://posthog.com/docs).
 
