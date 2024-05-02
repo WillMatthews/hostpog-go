@@ -92,6 +92,10 @@ func (s FlagValueSimple) truthy() bool {
 }
 
 func (f FlagValueString) truthy() bool {
+	if val, err := strconv.ParseBool(string(f)); err == nil {
+		return val
+	}
+
 	return len(f) > 0 // maybe?
 }
 
@@ -1013,12 +1017,27 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariant(
 		}
 
 		for flagKey, flagValue := range featureFlagVariants {
-			flagValueString := fmt.Sprintf("%v", flagValue)
-			if key == flagKey && flagValueString != "false" {
-				result := FlagValueString(flagValueString)
-				return result, nil
+			parsedFlagValue, err := parseFlagValue(flagValue)
+			if err != nil {
+				return nil, err
+			}
+
+			if key == flagKey {
+				return parsedFlagValue, nil
 			}
 		}
+		return nil, errors.New("flag key not found")
 	}
-	return nil, errors.New("flag not found") // wam addition
+}
+
+func parseFlagValue(value interface{}) (FlagValue, error) {
+	// if the value, a string, can be parsed as a bool, it is a simple flag
+	// otherwise, it is a string flag
+
+	valueString := fmt.Sprintf("%v", value)
+	if val, err := strconv.ParseBool(valueString); err == nil {
+		return FlagValueSimple(val), nil
+	}
+	return FlagValueString(valueString), nil
+
 }

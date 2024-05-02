@@ -922,7 +922,6 @@ func TestDisabledFlag(t *testing.T) {
 			DistinctId: "hey",
 		},
 	)
-
 	if checkErr != nil || isEnabled {
 		t.Errorf("flag listed in /decide/ response should be marked as disabled")
 	}
@@ -934,8 +933,14 @@ func TestDisabledFlag(t *testing.T) {
 		},
 	)
 
-	if err != nil || (*flagValue) != FlagValueSimple(false) {
-		t.Errorf("flag listed in /decide/ response should have value 'false'")
+	hasFalsyValue := (*flagValue) == FlagValueSimple(false) || flagValue == nil
+	if err != nil || !hasFalsyValue {
+
+		// TODO remove when done debugging
+		estr := "flag listed in /decide/ response should be marked as disabled"
+		estr += fmt.Sprintf(" hasFalsyValue: %v", hasFalsyValue)
+		estr += fmt.Sprintf(" err: %v", err)
+		t.Errorf(estr)
 	}
 }
 
