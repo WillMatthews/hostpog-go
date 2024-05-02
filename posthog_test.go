@@ -893,7 +893,7 @@ func TestMultiVariateFlag(t *testing.T) {
 		},
 	)
 
-	if err != nil || flagValue != "hello" {
+	if err != nil || (*flagValue) != FlagValueString("hello") {
 		t.Errorf("flag listed in /decide/ response should have value 'hello'")
 	}
 }
@@ -934,7 +934,7 @@ func TestDisabledFlag(t *testing.T) {
 		},
 	)
 
-	if err != nil || flagValue != false {
+	if err != nil || (*flagValue) != FlagValueSimple(false) {
 		t.Errorf("flag listed in /decide/ response should have value 'false'")
 	}
 }

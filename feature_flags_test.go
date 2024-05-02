@@ -25,11 +25,9 @@ func TestMatchPropertyValue(t *testing.T) {
 	properties := NewProperties().Set("Browser", "Chrome")
 
 	isMatch, err := matchProperty(property, properties)
-
 	if err != nil || !isMatch {
 		t.Error("Value is not a match")
 	}
-
 }
 
 func TestMatchPropertyInvalidOperator(t *testing.T) {
@@ -42,20 +40,16 @@ func TestMatchPropertyInvalidOperator(t *testing.T) {
 	properties := NewProperties().Set("Browser", "Chrome")
 
 	isMatch, err := matchProperty(property, properties)
-
-	if isMatch == true {
-		t.Error("Should not match") // why is this the expected behavior?
-		// is it because the operator is unknown? or because the types don't match?
+	if isMatch {
+		t.Error("Should not match")
 	}
 
 	if _, ok := err.(*InconclusiveMatchError); !ok {
 		t.Error("Error type is not a match")
-		// what is the expected error type then?
 	}
-
 }
-func TestMatchPropertySlice(t *testing.T) {
 
+func TestMatchPropertySlice(t *testing.T) {
 	property := FlagProperty{
 		Key:      "Browser",
 		Value:    []interface{}{"Chrome"},
@@ -64,11 +58,9 @@ func TestMatchPropertySlice(t *testing.T) {
 	properties := NewProperties().Set("Browser", "Chrome")
 
 	isMatch, err := matchProperty(property, properties)
-
 	if err != nil || !isMatch {
 		t.Error("Value is not a match")
 	}
-
 }
 
 func TestMatchPropertyNumber(t *testing.T) {
@@ -77,15 +69,11 @@ func TestMatchPropertyNumber(t *testing.T) {
 		Value:    5,
 		Operator: "gt",
 	}
-
 	properties := NewProperties().Set("Number", 7)
-
 	isMatch, err := matchProperty(property, properties)
-
 	if err != nil {
 		t.Error(err)
 	}
-
 	if !isMatch {
 		t.Error("Value is not a match")
 	}
@@ -95,15 +83,11 @@ func TestMatchPropertyNumber(t *testing.T) {
 		Value:    5,
 		Operator: "lt",
 	}
-
 	properties = NewProperties().Set("Number", 4)
-
 	isMatch, err = matchProperty(property, properties)
-
 	if err != nil {
 		t.Error(err)
 	}
-
 	if !isMatch {
 		t.Error("Value is not a match")
 	}
@@ -113,15 +97,11 @@ func TestMatchPropertyNumber(t *testing.T) {
 		Value:    5,
 		Operator: "gte",
 	}
-
 	properties = NewProperties().Set("Number", 5)
-
 	isMatch, err = matchProperty(property, properties)
-
 	if err != nil {
 		t.Error(err)
 	}
-
 	if !isMatch {
 		t.Error("Value is not a match")
 	}
@@ -131,15 +111,11 @@ func TestMatchPropertyNumber(t *testing.T) {
 		Value:    5,
 		Operator: "lte",
 	}
-
 	properties = NewProperties().Set("Number", 4)
-
 	isMatch, err = matchProperty(property, properties)
-
 	if err != nil {
 		t.Error(err)
 	}
-
 	if !isMatch {
 		t.Error("Value is not a match")
 	}
@@ -148,7 +124,6 @@ func TestMatchPropertyNumber(t *testing.T) {
 func TestMatchPropertyRegex(t *testing.T) {
 
 	shouldMatch := []interface{}{"value.com", "value2.com"}
-
 	property := FlagProperty{
 		Key:      "key",
 		Value:    "\\.com$",
@@ -167,7 +142,6 @@ func TestMatchPropertyRegex(t *testing.T) {
 	}
 
 	shouldNotMatch := []interface{}{".com343tfvalue5", "Alakazam", 123}
-
 	for _, val := range shouldNotMatch {
 		isMatch, err := matchProperty(property, NewProperties().Set("key", val))
 		if err != nil {
@@ -221,7 +195,6 @@ func TestMatchPropertyRegex(t *testing.T) {
 
 func TestMatchPropertyContains(t *testing.T) {
 	shouldMatch := []interface{}{"value", "value2", "value3", "value4", "343tfvalue5"}
-
 	property := FlagProperty{
 		Key:      "key",
 		Value:    "valUe",
@@ -254,7 +227,6 @@ func TestMatchPropertyContains(t *testing.T) {
 }
 
 func TestFlagPersonProperty(t *testing.T) {
-
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/decide") {
 			w.Write([]byte(fixture("test-decide-v2.json")))
@@ -279,7 +251,7 @@ func TestFlagPersonProperty(t *testing.T) {
 		},
 	)
 
-	if isMatch != true {
+	if !isMatch {
 		t.Error("Should match")
 	}
 
@@ -291,7 +263,7 @@ func TestFlagPersonProperty(t *testing.T) {
 		},
 	)
 
-	if isMatch == true {
+	if isMatch {
 		t.Error("Should not match")
 	}
 }
@@ -335,7 +307,7 @@ func TestFlagGroup(t *testing.T) {
 
 			groupPropertiesEquality := reflect.DeepEqual(
 				reqBody.GroupProperties,
-				map[string]Properties{"company": Properties{"name": "Project Name 1"}},
+				map[string]Properties{"company": {"name": "Project Name 1"}},
 			)
 			if !groupPropertiesEquality {
 				t.Errorf(
@@ -400,7 +372,7 @@ func TestFlagGroupProperty(t *testing.T) {
 		},
 	)
 
-	if isMatch == true {
+	if isMatch {
 		t.Error("Should not match")
 	}
 
@@ -414,7 +386,7 @@ func TestFlagGroupProperty(t *testing.T) {
 		},
 	)
 
-	if isMatch == true {
+	if isMatch {
 		t.Error("Should not match")
 	}
 
@@ -429,7 +401,7 @@ func TestFlagGroupProperty(t *testing.T) {
 		},
 	)
 
-	if isMatch != true {
+	if !isMatch {
 		t.Error("Should match")
 	}
 }
@@ -458,7 +430,7 @@ func TestComplexDefinition(t *testing.T) {
 		},
 	)
 
-	if isMatch != true {
+	if !isMatch {
 		t.Error("Should match")
 	}
 
@@ -470,10 +442,9 @@ func TestComplexDefinition(t *testing.T) {
 		},
 	)
 
-	if isMatch != true {
+	if !isMatch {
 		t.Error("Should match")
 	}
-
 }
 
 func TestFallbackToDecide(t *testing.T) {
@@ -499,12 +470,12 @@ func TestFallbackToDecide(t *testing.T) {
 			DistinctId: "some-distinct-id",
 		},
 	)
-
-	if isMatch != true {
-		t.Error("Should match, but instead got", isMatch, "of type", reflect.TypeOf(isMatch))
+	if !isMatch {
+		t.Error("Should match")
 	}
 }
 
+// aha! this fails
 func TestFeatureFlagsDontFallbackToDecideWhenOnlyLocalEvaluationIsTrue(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/decide") {
@@ -541,7 +512,7 @@ func TestFeatureFlagsDontFallbackToDecideWhenOnlyLocalEvaluationIsTrue(t *testin
 		},
 	)
 
-	if isMatch == true {
+	if isMatch {
 		t.Error("Should not match")
 	}
 
@@ -565,7 +536,7 @@ func TestFeatureFlagsDontFallbackToDecideWhenOnlyLocalEvaluationIsTrue(t *testin
 		},
 	)
 
-	if isMatch == true {
+	if isMatch {
 		t.Error("Should not match")
 	}
 }
@@ -593,7 +564,7 @@ func TestFeatureFlagDefaultsDontHinderEvaluation(t *testing.T) {
 		},
 	)
 
-	if isMatch == true {
+	if isMatch {
 		t.Error("Should not match")
 	}
 
@@ -604,7 +575,7 @@ func TestFeatureFlagDefaultsDontHinderEvaluation(t *testing.T) {
 		},
 	)
 
-	if isMatch == true {
+	if isMatch {
 		t.Error("Should not match")
 	}
 
@@ -615,7 +586,7 @@ func TestFeatureFlagDefaultsDontHinderEvaluation(t *testing.T) {
 		},
 	)
 
-	if isMatch == true {
+	if isMatch {
 		t.Error("Should not match")
 	}
 
@@ -626,7 +597,7 @@ func TestFeatureFlagDefaultsDontHinderEvaluation(t *testing.T) {
 		},
 	)
 
-	if isMatch == true {
+	if isMatch {
 		t.Error("Should not match")
 	}
 
@@ -656,15 +627,15 @@ func TestFeatureFlagNullComeIntoPlayOnlyWhenDecideErrorsOut(t *testing.T) {
 		t.Error("Should be nil")
 	}
 
-	isMatch, _ = client.IsFeatureEnabled(
+	isEnabled, _ := client.IsFeatureEnabled(
 		FeatureFlagPayload{
 			Key:        "test-get-feature",
 			DistinctId: "distinct_id",
 		},
 	)
 
-	if isMatch != nil {
-		t.Error("Should be nil")
+	if !isEnabled {
+		t.Error("Should be false")
 	}
 }
 
@@ -692,7 +663,7 @@ func TestExperienceContinuityOverride(t *testing.T) {
 		},
 	)
 
-	if featureVariant != "decide-fallback-value" {
+	if *featureVariant != FlagValueString("decide-fallback-value") {
 		t.Error("Should be decide-fallback-value")
 	}
 }
@@ -873,7 +844,7 @@ func TestFeatureEnabledSimpleIsTrueWhenRolloutUndefined(t *testing.T) {
 			DistinctId: "distinct-id",
 		},
 	)
-	if isMatch != true {
+	if !isMatch {
 		t.Error("Should be enabled")
 	}
 }
@@ -902,7 +873,7 @@ func TestGetFeatureFlag(t *testing.T) {
 		},
 	)
 
-	if variant != "variant-1" {
+	if *variant != FlagValueString("variant-1") {
 		t.Error("Should match")
 	}
 }
@@ -933,7 +904,7 @@ func TestFlagWithVariantOverrides(t *testing.T) {
 		},
 	)
 
-	if variant != "second-variant" {
+	if *variant != FlagValueString("second-variant") {
 		t.Error("Should match", variant, "second-variant")
 	}
 
@@ -944,7 +915,7 @@ func TestFlagWithVariantOverrides(t *testing.T) {
 		},
 	)
 
-	if variant != "first-variant" {
+	if *variant != FlagValueString("first-variant") {
 		t.Error("Should match", variant, "first-variant")
 	}
 }
@@ -975,7 +946,7 @@ func TestFlagWithClashingVariantOverrides(t *testing.T) {
 		},
 	)
 
-	if variant != "second-variant" {
+	if *variant != FlagValueString("second-variant") {
 		t.Error("Should match", variant, "second-variant")
 	}
 
@@ -987,7 +958,7 @@ func TestFlagWithClashingVariantOverrides(t *testing.T) {
 		},
 	)
 
-	if variant != "second-variant" {
+	if *variant != FlagValueString("second-variant") {
 		t.Error("Should match", variant, "second-variant")
 	}
 }
@@ -1018,7 +989,7 @@ func TestFlagWithInvalidVariantOverrides(t *testing.T) {
 		},
 	)
 
-	if variant != "third-variant" {
+	if *variant != FlagValueString("third-variant") {
 		t.Error("Should match", variant, "third-variant")
 	}
 
@@ -1029,7 +1000,7 @@ func TestFlagWithInvalidVariantOverrides(t *testing.T) {
 		},
 	)
 
-	if variant != "second-variant" {
+	if *variant != FlagValueString("second-variant") {
 		t.Error("Should match", variant, "third-variant")
 	}
 }
@@ -1060,7 +1031,7 @@ func TestFlagWithMultipleVariantOverrides(t *testing.T) {
 		},
 	)
 
-	if variant != "second-variant" {
+	if *variant != FlagValueString("second-variant") {
 		t.Error("Should match", variant, "second-variant")
 	}
 
@@ -1071,7 +1042,7 @@ func TestFlagWithMultipleVariantOverrides(t *testing.T) {
 		},
 	)
 
-	if variant != "third-variant" {
+	if *variant != FlagValueString("third-variant") {
 		t.Error("Should match", variant, "third-variant")
 	}
 
@@ -1082,7 +1053,7 @@ func TestFlagWithMultipleVariantOverrides(t *testing.T) {
 		},
 	)
 
-	if variant != "second-variant" {
+	if *variant != FlagValueString("second-variant") {
 		t.Error("Should match", variant, "second-variant")
 	}
 }
@@ -1112,7 +1083,7 @@ func TestCaptureIsCalled(t *testing.T) {
 		},
 	)
 
-	if variant != "variant-1" {
+	if *variant != FlagValueString("variant-1") {
 		t.Error("Should match")
 	}
 
@@ -3205,14 +3176,14 @@ func TestComplexCohortsLocally(t *testing.T) {
 
 	payload.PersonProperties = NewProperties().Set("region", "USA").Set("other", "thing")
 	isMatch, _ = client.IsFeatureEnabled(payload)
-	if isMatch != true {
+	if !isMatch {
 		t.Error("Should match")
 	}
 
 	// even though 'other' property is not present, the cohort should still match since it's an OR condition
 	payload.PersonProperties = NewProperties().Set("region", "USA").Set("nation", "UK")
 	isMatch, _ = client.IsFeatureEnabled(payload)
-	if isMatch != true {
+	if !isMatch {
 		t.Error("Should match")
 	}
 }
@@ -3248,7 +3219,7 @@ func TestComplexCohortsWithNegationLocally(t *testing.T) {
 	// even though 'other' property is not present, the cohort should still match since it's an OR condition
 	payload.PersonProperties = NewProperties().Set("region", "USA").Set("nation", "UK")
 	isMatch, _ = client.IsFeatureEnabled(payload)
-	if isMatch != true {
+	if !isMatch {
 		t.Error("Should match")
 	}
 
@@ -3261,7 +3232,7 @@ func TestComplexCohortsWithNegationLocally(t *testing.T) {
 
 	payload.PersonProperties = NewProperties().Set("region", "USA").Set("other", "thing2")
 	isMatch, _ = client.IsFeatureEnabled(payload)
-	if isMatch != true {
+	if !isMatch {
 		t.Error("Should match")
 	}
 }
@@ -3301,7 +3272,7 @@ func TestFlagWithTimeoutExceeded(t *testing.T) {
 	if !strings.Contains(err.Error(), "context deadline exceeded") {
 		t.Error("Expected context deadline exceeded error")
 	}
-	if isMatch != nil {
+	if isMatch {
 		t.Error("Flag shouldn't match")
 	}
 
@@ -3340,7 +3311,8 @@ func TestFlagWithTimeoutExceeded(t *testing.T) {
 		t.Error("Expected context deadline exceeded error")
 	}
 
-	if variants == nil || len(variants) != 1 || variants["simple-flag"] != true {
+	simpleFlag := variants["simple-flag"] == FlagValueSimple(true)
+	if variants == nil || len(variants) != 1 || !simpleFlag {
 		t.Error("should return locally evaluated flag")
 	}
 
@@ -3361,8 +3333,10 @@ func TestFlagWithTimeoutExceeded(t *testing.T) {
 	}
 	fmt.Println(variants)
 
-	if variants == nil || len(variants) != 2 || variants["simple-flag"] != true ||
-		variants["group-flag"] != true {
+	simpleFlag = variants["simple-flag"] == FlagValueSimple(true)
+	groupFlag := variants["group-flag"] == FlagValueSimple(true)
+	if variants == nil || len(variants) != 2 || !simpleFlag ||
+		!groupFlag {
 		t.Error("should return locally evaluated flag")
 	}
 }

@@ -355,7 +355,7 @@ func (poller *FeatureFlagsPoller) computeFlagLocally(
 	if flag.Filters.AggregationGroupTypeIndex != nil {
 		groupName, exists := poller.groups[fmt.Sprintf("%d", *flag.Filters.AggregationGroupTypeIndex)]
 		if !exists {
-			return nil, errors.New("Flag has unknown group type index")
+			return nil, errors.New("flag has unknown group type index")
 		}
 
 		_, exists = groups[groupName]
@@ -524,7 +524,7 @@ func matchCohort(
 	cohortId := fmt.Sprint(property.Value)
 	propertyGroup, ok := cohorts[cohortId]
 	if !ok {
-		return false, fmt.Errorf("Can't match cohort: cohort %s not found", cohortId)
+		return false, fmt.Errorf("can't match cohort: cohort %s not found", cohortId)
 	}
 	return matchPropertyGroup(propertyGroup, properties, cohorts)
 }
@@ -597,13 +597,13 @@ func matchPropertyGroup(
 			}
 
 		default:
-			return false, errors.New("Unknown property type")
+			return false, errors.New("unknown property type")
 		}
 	}
 
 	if errorMatchingLocally {
 		return false, &InconclusiveMatchError{
-			msg: "Can't match cohort without a given cohort property value",
+			msg: "can't match cohort without a given cohort property value",
 		}
 	}
 
@@ -686,7 +686,7 @@ func matchProperty(property FlagProperty, properties Properties) (bool, error) {
 			valueString = strconv.Itoa(valueInt)
 			r, err = regexp.Compile(valueString)
 		} else {
-			return false, errors.New("Regex expression not allowed")
+			return false, errors.New("regex expression not allowed")
 		}
 
 		// invalid regex
@@ -701,7 +701,7 @@ func matchProperty(property FlagProperty, properties Properties) (bool, error) {
 			valueString = strconv.Itoa(valueInt)
 			match = r.MatchString(valueString)
 		} else {
-			return false, errors.New("Value type not supported")
+			return false, errors.New("value type not supported")
 		}
 
 		return !match, nil
@@ -857,7 +857,7 @@ func (poller *FeatureFlagsPoller) GetFeatureFlags() ([]FeatureFlag, error) {
 	_, closed := <-poller.loaded
 	if closed && poller.featureFlags == nil {
 		// There was an error with initial flag fetching
-		return nil, fmt.Errorf("Flags were not successfully fetched yet")
+		return nil, fmt.Errorf("flags were not successfully fetched yet")
 	}
 
 	return poller.featureFlags, nil
@@ -938,7 +938,7 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariants(
 	personProperties Properties,
 	groupProperties map[string]Properties,
 ) (flagz, error) {
-	errorMessage := "Failed when getting flag variants"
+	errorMessage := "failed when getting flag variants"
 	requestDataBytes, err := json.Marshal(DecideRequestData{
 		ApiKey:           poller.projectApiKey,
 		DistinctId:       distinctId,
@@ -956,7 +956,7 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariants(
 	res, cancel, err := poller.decide(requestDataBytes, headers)
 	defer cancel()
 	if err != nil || res.StatusCode != http.StatusOK {
-		errorMessage = "Error calling /decide/"
+		errorMessage = "error calling /decide/"
 		if err != nil {
 			errorMessage += " - " + err.Error()
 		}
@@ -966,7 +966,7 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariants(
 
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		errorMessage = "Error reading response from /decide/"
+		errorMessage = "error reading response from /decide/"
 		poller.Errorf(errorMessage)
 		return nil, errors.New(errorMessage)
 	}
@@ -975,7 +975,7 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariants(
 	decideResponse := DecideResponse{}
 	err = json.Unmarshal([]byte(resBody), &decideResponse)
 	if err != nil {
-		errorMessage = "Error parsing response from /decide/"
+		errorMessage = "error parsing response from /decide/"
 		poller.Errorf(errorMessage)
 		return nil, errors.New(errorMessage)
 	}
@@ -1022,5 +1022,5 @@ func (poller *FeatureFlagsPoller) getFeatureFlagVariant(
 			}
 		}
 	}
-	return nil, errors.New("Flag not found") // wam addition
+	return nil, errors.New("flag not found") // wam addition
 }
