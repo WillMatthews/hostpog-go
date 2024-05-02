@@ -478,7 +478,6 @@ func matchFeatureFlagProperties(
 	return FlagValueSimple(false), nil
 }
 
-// This function is OK
 func isConditionMatch(
 	flag FeatureFlag,
 	distinctId string,
@@ -515,7 +514,6 @@ func isConditionMatch(
 	return true, nil
 }
 
-// this function is OK
 func matchCohort(
 	property FlagProperty,
 	properties Properties,
@@ -584,13 +582,13 @@ func matchPropertyGroup(
 			}
 
 			negation := prop.Negation
-			andTest := !matches && !negation || matches && negation
-			orTest := matches && !negation || !matches && negation
 			if groupType == "AND" {
+				andTest := !matches && !negation || matches && negation
 				if andTest {
 					return false, nil
 				}
 			} else {
+				orTest := matches && !negation || !matches && negation
 				if orTest {
 					return true, nil
 				}

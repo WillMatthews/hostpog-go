@@ -882,7 +882,7 @@ func TestMultiVariateFlag(t *testing.T) {
 		},
 	)
 
-	if checkErr != nil || isEnabled == false {
+	if checkErr != nil || !isEnabled {
 		t.Errorf("flag listed in /decide/ response should be marked as enabled")
 	}
 
@@ -923,7 +923,7 @@ func TestDisabledFlag(t *testing.T) {
 		},
 	)
 
-	if checkErr != nil || isEnabled == true {
+	if checkErr != nil || isEnabled {
 		t.Errorf("flag listed in /decide/ response should be marked as disabled")
 	}
 
