@@ -1,15 +1,20 @@
 # HostPog Go
 
 I had a small episode due to some of the limitations of Posthog-go.
-I thought I'd channel my frustration into a _meaningful contribution to open source_ instead.
+I thought I'd channel my frustration into a _meaningful contribution to open source_ instead of just whinging.
 
 This repo aims to fix some of the problems I noticed with the original posthog repo:
-- poor code quality
-- love of interface{} (who needs typs anyway yee haw)
-- lack of ability to use payloads
+- questionable code quality
+    - very suspect patterns
+    - lack of types
+    - questionable error handling
+    - lack of formatting / gofmt compatability
+- the apparent love of `interface{}` (who needs types anyway yee haw) rather than carefully building out a few interfaces and types.
+- lack of ability to use payloads. This one is a real pain for me. Why isn't it a thing?
 
 This is a work in progress, but I'll try to get somewhere, and maybe even open up a PR into posthog.
 
+---
 
 Please see the main [PostHog docs](https://posthog.com/docs).
 
@@ -32,7 +37,10 @@ import (
 )
 
 func main() {
-    client := posthog.New(os.Getenv("POSTHOG_API_KEY"))
+    client, err := posthog.New(os.Getenv("POSTHOG_API_KEY"))
+    if err != nil {
+        panic(err)
+    }
     defer client.Close()
 
     // Capture an event
