@@ -50,7 +50,7 @@ type Client interface {
 	GetFeatureFlags() ([]FeatureFlag, error)
 	//
 	// Get all flags - returns all flags for a user
-	GetAllFlags(FeatureFlagPayloadNoKey) (map[string]interface{}, error)
+	GetAllFlags(FeatureFlagPayloadNoKey) (map[string]FlagValue, error)
 }
 
 type client struct {
@@ -300,7 +300,7 @@ func (c *client) GetFeatureFlags() ([]FeatureFlag, error) {
 	return c.featureFlagsPoller.GetFeatureFlags()
 }
 
-func (c *client) GetAllFlags(flagConfig FeatureFlagPayloadNoKey) (map[string]interface{}, error) {
+func (c *client) GetAllFlags(flagConfig FeatureFlagPayloadNoKey) (map[string]FlagValue, error) {
 
 	if err := flagConfig.validate(); err != nil {
 		return nil, err

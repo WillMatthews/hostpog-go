@@ -689,8 +689,8 @@ func TestGetAllFlags(t *testing.T) {
 		DistinctId: "distinct-id",
 	})
 
-	if featureVariants["beta-feature"] != "decide-fallback-value" ||
-		featureVariants["beta-feature2"] != "variant-2" {
+	if featureVariants["beta-feature"] != FlagValueString("decide-fallback-value") ||
+		featureVariants["beta-feature2"] != FlagValueString("variant-2") {
 		t.Error("Should match decide values")
 	}
 }
@@ -716,8 +716,8 @@ func TestGetAllFlagsEmptyLocal(t *testing.T) {
 		DistinctId: "distinct-id",
 	})
 
-	if featureVariants["beta-feature"] != "decide-fallback-value" ||
-		featureVariants["beta-feature2"] != "variant-2" {
+	if featureVariants["beta-feature"] != FlagValueString("decide-fallback-value") ||
+		featureVariants["beta-feature2"] != FlagValueString("variant-2") {
 		t.Error("Should match decide values")
 	}
 }
@@ -743,7 +743,8 @@ func TestGetAllFlagsNoDecide(t *testing.T) {
 		DistinctId: "distinct-id",
 	})
 
-	if featureVariants["beta-feature"] != true || featureVariants["disabled-feature"] != false {
+	if featureVariants["beta-feature"] != FlagValueSimple(true) ||
+		featureVariants["disabled-feature"] != FlagValueSimple(false) {
 		t.Error("Should match")
 	}
 }
@@ -770,7 +771,8 @@ func TestGetAllFlagsOnlyLocalEvaluationSet(t *testing.T) {
 		OnlyEvaluateLocally: true,
 	})
 
-	if featureVariants["beta-feature"] != true || featureVariants["disabled-feature"] != false ||
+	if featureVariants["beta-feature"] != FlagValueSimple(true) ||
+		featureVariants["disabled-feature"] != FlagValueSimple(false) ||
 		featureVariants["beta-feature2"] != nil {
 		t.Error("Should match")
 	}
@@ -797,7 +799,8 @@ func TestComputeInactiveFlagsLocally(t *testing.T) {
 		DistinctId: "distinct-id",
 	})
 
-	if featureVariants["beta-feature"] != true || featureVariants["disabled-feature"] != false {
+	if featureVariants["beta-feature"] != FlagValueSimple(true) ||
+		featureVariants["disabled-feature"] != FlagValueSimple(false) {
 		t.Error("Should match")
 	}
 
@@ -821,7 +824,8 @@ func TestComputeInactiveFlagsLocally(t *testing.T) {
 		DistinctId: "distinct-id",
 	})
 
-	if featureVariants["beta-feature"] != false || featureVariants["disabled-feature"] != true {
+	if featureVariants["beta-feature"] != FlagValueSimple(false) ||
+		featureVariants["disabled-feature"] != FlagValueSimple(true) {
 		t.Error("Should match")
 	}
 }
@@ -2315,7 +2319,7 @@ func TestMultivariateFlagConsistency(t *testing.T) {
 		FlagValueString("first-variant"),
 		FlagValueSimple(false),
 		FlagValueSimple(false),
-		FlagValueString(FlagValueString("fifth-variant")),
+		FlagValueString("fifth-variant"),
 		FlagValueString("second-variant"),
 		FlagValueSimple(false),
 		FlagValueString("second-variant"),

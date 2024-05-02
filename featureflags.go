@@ -290,8 +290,8 @@ func (poller *FeatureFlagsPoller) GetFeatureFlag(
 
 func (poller *FeatureFlagsPoller) GetAllFlags(
 	flagConfig FeatureFlagPayloadNoKey,
-) (map[string]interface{}, error) {
-	response := map[string]interface{}{}
+) (map[string]FlagValue, error) {
+	response := make(map[string]FlagValue)
 	featureFlags, err := poller.GetFeatureFlags()
 	if err != nil {
 		return nil, err
@@ -327,13 +327,16 @@ func (poller *FeatureFlagsPoller) GetAllFlags(
 			flagConfig.PersonProperties,
 			flagConfig.GroupProperties,
 		)
-
 		if err != nil {
 			return response, err
-		} else {
-			for k, v := range result {
-				response[k] = v
+		}
+
+		for k, v := range result {
+			flagVal, err := parseFlagValue(v)
+			if err != nil {
+				continue // just skip the flag if it can't be parsed .. I guess
 			}
+			response[k] = flagVal
 		}
 	}
 
